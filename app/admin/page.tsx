@@ -44,6 +44,9 @@ export default function AdminPage() {
   const [editingItem, setEditingItem] = useState<string | null>(null)
   const [editValues, setEditValues] = useState<Partial<TutanakItem>>({})
   const [saving, setSaving] = useState(false)
+  const [silmeOnay, setSilmeOnay] = useState<string | null>(null)
+  const [silmeYazi, setSilmeYazi] = useState('')
+  const [siliniyor, setSiliniyor] = useState(false)
   const [bolgeFilter, setBolgeFilter] = useState('')
   const [idariBolgeler, setIdariBolgeler] = useState<string[]>([])
   const [magazaBolgeMap, setMagazaBolgeMap] = useState<Record<string, string>>({})
@@ -56,6 +59,26 @@ export default function AdminPage() {
         setYukleniyor(false)
       })
   }, [])
+
+  const tutanakSil = async (id: string) => {
+    setSiliniyor(true)
+    try {
+      const res = await fetch('/api/tutanaklar', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id }),
+      })
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
+      setSecili(null)
+      setSilmeOnay(null)
+      setSilmeYazi('')
+      loadData()
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Silme hatasi')
+    }
+    setSiliniyor(false)
+  }
 
   // Magaza referans verisinden idari bolgeleri cek
   const loadBolgeler = useCallback(() => {
@@ -578,6 +601,45 @@ export default function AdminPage() {
                     </div>
                   </div>
                 )}
+
+                {/* Tutanak Silme */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  {silmeOnay === secili.id ? (
+                    <div className="bg-red-50 border border-red-300 rounded-lg p-4">
+                      <p className="font-semibold text-red-800 text-sm mb-2">Bu tutanagi silmek istediginize emin misiniz?</p>
+                      <p className="text-red-600 text-xs mb-3">Bu islem geri alinamaz. Tutanak ve tum is kalemleri silinecektir.</p>
+                      <p className="text-red-700 text-xs mb-2">Onaylamak icin tutanak numarasini yazin: <b>{secili.no}</b></p>
+                      <input
+                        value={silmeYazi}
+                        onChange={e => setSilmeYazi(e.target.value)}
+                        placeholder={secili.no || 'Tutanak no'}
+                        className="w-full border border-red-300 rounded-md px-3 py-2 text-sm mb-3 focus:outline-none focus:ring-2 focus:ring-red-400"
+                      />
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => tutanakSil(secili.id)}
+                          disabled={silmeYazi !== secili.no || siliniyor}
+                          className="bg-red-600 text-white px-4 py-2 rounded-md text-sm font-semibold disabled:opacity-40 disabled:cursor-not-allowed hover:bg-red-700"
+                        >
+                          {siliniyor ? 'Siliniyor...' : 'Evet, Sil'}
+                        </button>
+                        <button
+                          onClick={() => { setSilmeOnay(null); setSilmeYazi('') }}
+                          className="bg-gray-200 text-gray-700 px-4 py-2 rounded-md text-sm font-semibold hover:bg-gray-300"
+                        >
+                          Vazgec
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => setSilmeOnay(secili.id)}
+                      className="text-red-400 text-xs hover:text-red-600 hover:underline"
+                    >
+                      Tutanagi Sil
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
           </div>
