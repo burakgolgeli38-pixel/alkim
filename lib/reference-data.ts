@@ -109,9 +109,15 @@ export async function findPozKoduAsync(pozNo: string): Promise<BirimFiyat | null
   const normalized = pozNo.trim().toUpperCase()
   if (normalized === 'S-09') return null
 
+  // Once Supabase'de ara
   const dbList = await getDBBirimFiyatlar()
-  const list = dbList || getJSONBirimFiyatlar()
-  return list.find(b => b.poz_no.trim().toUpperCase() === normalized) || null
+  if (dbList) {
+    const found = dbList.find(b => b.poz_no.trim().toUpperCase() === normalized)
+    if (found) return found
+  }
+  // Supabase'de yoksa JSON fallback
+  const jsonList = getJSONBirimFiyatlar()
+  return jsonList.find(b => b.poz_no.trim().toUpperCase() === normalized) || null
 }
 
 // Sync: cache veya JSON
@@ -151,9 +157,14 @@ function normalizeTurkish(str: string): string {
 // ---- Magaza Eslestirme ----
 
 export async function findMagazaAsync(magazaAdi: string): Promise<Magaza | null> {
+  // Once Supabase'de ara
   const dbList = await getDBMagazalar()
-  const list = dbList || getJSONMagazalar()
-  return matchMagazaFromList(magazaAdi, list)
+  if (dbList) {
+    const found = matchMagazaFromList(magazaAdi, dbList)
+    if (found) return found
+  }
+  // Supabase'de yoksa JSON fallback
+  return matchMagazaFromList(magazaAdi, getJSONMagazalar())
 }
 
 export function findMagaza(magazaAdi: string): Magaza | null {
@@ -191,9 +202,16 @@ function matchMagazaFromList(magazaAdi: string, list: Magaza[]): Magaza | null {
 }
 
 export async function findMagazaByKodAsync(kod: string): Promise<Magaza | null> {
+  const trimmed = kod.trim()
+  // Once Supabase'de ara
   const dbList = await getDBMagazalar()
-  const list = dbList || getJSONMagazalar()
-  return list.find(m => m.kod === kod.trim()) || null
+  if (dbList) {
+    const found = dbList.find(m => m.kod === trimmed)
+    if (found) return found
+  }
+  // Supabase'de yoksa JSON fallback'te de ara
+  const jsonList = getJSONMagazalar()
+  return jsonList.find(m => m.kod === trimmed) || null
 }
 
 export function findMagazaByKod(kod: string): Magaza | null {

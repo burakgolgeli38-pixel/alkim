@@ -139,8 +139,13 @@ Okunamayan alanlar için boş string kullan. Tahmin etme, okunamıyorsa boş bı
     // Magaza kodu uzerinden: B sutunu = magaza adi, C sutunu = idari bolge
     const fullMagazaAdi = magazaMatch?.magaza_adi || extracted.magaza || ''
     const magazaNo = magazaMatch?.kod || ocrMagazaNo || ''
-    // Bolge bilgisi: magaza kodundan gelen idari bolge ONCELIKLI
-    const bolgeBilgisi = magazaMatch?.yeni_idari_bolge || extracted.bolge || ''
+    // Bolge bilgisi: SADECE magaza kodundan gelen idari bolge kullan
+    // OCR'dan gelen bolge bilgisi guvenilmez (yanlis okuyor), kullanma
+    const bolgeBilgisi = magazaMatch?.yeni_idari_bolge || ''
+
+    if (!magazaMatch?.yeni_idari_bolge && ocrMagazaNo) {
+      uyarilar.push(`Magaza kodu "${ocrMagazaNo}" icin bolge bilgisi bulunamadi`)
+    }
 
     // Tutanak header kaydet
     const { data: tutanakData, error: tutanakError } = await supabaseAdmin
