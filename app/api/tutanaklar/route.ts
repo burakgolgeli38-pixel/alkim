@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server'
-import { supabase } from '@/lib/supabase'
+import { getSupabaseAdmin } from '@/lib/supabase'
 
 export async function GET() {
+  const supabase = getSupabaseAdmin()
   const { data, error } = await supabase
     .from('tutanaklar')
-    .select('*')
+    .select('*, tutanak_items(*)')
     .order('created_at', { ascending: false })
 
   if (error) return NextResponse.json({ error: error.message }, { status: 500 })

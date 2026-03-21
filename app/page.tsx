@@ -6,7 +6,8 @@ export default function CalısanPage() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
   const [durum, setDurum] = useState<'bosta' | 'yukleniyor' | 'basarili' | 'hata'>('bosta')
-  const [sonuc, setSonuc] = useState<Record<string, string> | null>(null)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [sonuc, setSonuc] = useState<Record<string, any> | null>(null)
   const [hata, setHata] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
 
@@ -31,7 +32,7 @@ export default function CalısanPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Hata oluştu')
-      setSonuc(json.tutanak)
+      setSonuc({ ...json.tutanak, _uyarilar: json.uyarilar, _dogrulama: json.dogrulama_durumu })
       setDurum('basarili')
     } catch (err: unknown) {
       setHata(err instanceof Error ? err.message : 'Bilinmeyen hata')
@@ -59,25 +60,55 @@ export default function CalısanPage() {
         {durum === 'basarili' && sonuc ? (
           <div className="bg-white rounded-2xl shadow p-5 space-y-3">
             <div className="flex items-center gap-2 text-green-600 font-semibold text-lg mb-2">
-              <span>✓</span> Tutanak Kaydedildi
+              <span>&#10003;</span> Tutanak Kaydedildi
             </div>
+            {sonuc._dogrulama === 'uyari' && sonuc._uyarilar?.length > 0 && (
+              <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 flex items-start gap-2">
+                <span className="text-amber-500 text-lg">&#9888;</span>
+                <div>
+                  <p className="font-semibold text-amber-800 text-sm">Dogrulama Uyarisi</p>
+                  {sonuc._uyarilar.map((u: string, i: number) => (
+                    <p key={i} className="text-amber-700 text-xs mt-1">{u}</p>
+                  ))}
+                </div>
+              </div>
+            )}
             {[
               ['Tutanak No', sonuc.no],
               ['Tarih', sonuc.tarih],
-              ['Bölge', sonuc.bolge],
-              ['Mağaza', sonuc.magaza],
+              ['Bolge', sonuc.bolge],
+              ['Magaza', sonuc.magaza],
               ['Konu', sonuc.konu],
               ['Sorumlu', sonuc.sorumlu],
+              ['Uygulamaci', sonuc.uygulamaci],
+              ['Bolge Mudurlugu', sonuc.bolge_mudurlugu],
             ].map(([label, value]) => (
               <div key={label} className="flex justify-between text-sm border-b pb-2">
                 <span className="text-gray-500">{label}</span>
                 <span className="font-medium text-right max-w-[55%]">{value || '—'}</span>
               </div>
             ))}
-            <div className="text-sm text-gray-500 pt-1">
-              <span className="font-medium text-gray-700">Açıklama:</span>
-              <p className="mt-1 text-gray-700 leading-relaxed">{sonuc.aciklama || '—'}</p>
-            </div>
+
+            {/* Is kalemleri */}
+            {sonuc.tutanak_items && sonuc.tutanak_items.length > 0 && (
+              <div className="pt-2">
+                <p className="font-medium text-gray-700 text-sm mb-2">Is Kalemleri ({sonuc.tutanak_items.length})</p>
+                <div className="space-y-2">
+                  {sonuc.tutanak_items.map((item: { poz_kodu: string; aciklama: string; miktar: number; birim: string; toplam_tutar: number }, idx: number) => (
+                    <div key={idx} className="bg-gray-50 rounded-lg p-2 text-xs">
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-mono font-bold">{item.poz_kodu}</span>
+                        <span className="text-gray-600">{item.aciklama}</span>
+                      </div>
+                      <div className="flex gap-3 text-gray-500">
+                        <span>Miktar: <b>{item.miktar} {item.birim}</b></span>
+                        <span className="text-green-700 font-bold">{item.toplam_tutar?.toLocaleString('tr-TR')} TL</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             <button
               onClick={sifirla}
               className="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-semibold text-sm"
