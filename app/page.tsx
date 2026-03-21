@@ -136,7 +136,6 @@ export default function CalısanPage() {
               ref={inputRef}
               type="file"
               accept="image/*"
-              capture="environment"
               onChange={dosyaSec}
               className="hidden"
             />
