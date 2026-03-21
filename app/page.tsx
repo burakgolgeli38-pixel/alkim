@@ -2,6 +2,14 @@
 
 import { useState, useRef } from 'react'
 
+const navy = '#2B3674'
+const navyLight = '#3B4A8C'
+const accent = '#4318FF'
+const pageBg = '#F4F7FE'
+const borderColor = '#E2E8F0'
+const textMuted = '#A3AED0'
+const textSecondary = '#8F9BBA'
+
 export default function CalısanPage() {
   const [file, setFile] = useState<File | null>(null)
   const [preview, setPreview] = useState<string | null>(null)
@@ -50,29 +58,43 @@ export default function CalısanPage() {
   }
 
   return (
-    <main className="min-h-screen bg-gray-50 flex flex-col items-center py-8 px-4">
+    <main className="min-h-screen flex flex-col items-center py-8 px-4" style={{ background: pageBg }}>
       <div className="w-full max-w-md">
-        <div className="bg-red-600 text-white rounded-2xl p-5 mb-6 text-center shadow">
-          <h1 className="text-xl font-bold tracking-wide">ALKIM</h1>
-          <p className="text-sm opacity-90 mt-1">Tutanak Yükleme</p>
+        {/* Header */}
+        <div className="rounded-2xl p-5 mb-6 text-center" style={{ background: navy }}>
+          <div className="flex items-center justify-center gap-2.5 mb-1">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center text-white font-bold text-sm" style={{ background: accent }}>A</div>
+            <h1 className="text-xl font-bold tracking-wide text-white">ALKIM</h1>
+          </div>
+          <p className="text-sm mt-1" style={{ color: 'rgba(255,255,255,0.6)' }}>Tutanak Yukleme</p>
         </div>
 
         {durum === 'basarili' && sonuc ? (
-          <div className="bg-white rounded-2xl shadow p-5 space-y-3">
-            <div className="flex items-center gap-2 text-green-600 font-semibold text-lg mb-2">
-              <span>&#10003;</span> Tutanak Kaydedildi
+          <div className="bg-white rounded-2xl p-5 space-y-3" style={{ border: `1px solid ${borderColor}` }}>
+            {/* Basari */}
+            <div className="flex items-center gap-2 font-semibold text-lg mb-2" style={{ color: '#1B7A5A' }}>
+              <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ background: '#E8F5F0' }}>
+                <svg className="w-4 h-4" fill="none" stroke="#1B7A5A" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" /></svg>
+              </div>
+              Tutanak Kaydedildi
             </div>
+
+            {/* Uyari */}
             {sonuc._dogrulama === 'uyari' && sonuc._uyarilar?.length > 0 && (
-              <div className="bg-amber-50 border border-amber-300 rounded-lg p-3 flex items-start gap-2">
-                <span className="text-amber-500 text-lg">&#9888;</span>
+              <div className="rounded-xl p-3 flex items-start gap-2" style={{ background: '#FFF8EE', border: '1px solid #F0D8B0' }}>
+                <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5" style={{ background: '#FEF0D0' }}>
+                  <svg className="w-3.5 h-3.5" style={{ color: '#B07020' }} fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" /></svg>
+                </div>
                 <div>
-                  <p className="font-semibold text-amber-800 text-sm">Dogrulama Uyarisi</p>
+                  <p className="font-semibold text-sm" style={{ color: '#8B5E20' }}>Dogrulama Uyarisi</p>
                   {sonuc._uyarilar.map((u: string, i: number) => (
-                    <p key={i} className="text-amber-700 text-xs mt-1">{u}</p>
+                    <p key={i} className="text-xs mt-1" style={{ color: '#A07030' }}>{u}</p>
                   ))}
                 </div>
               </div>
             )}
+
+            {/* Bilgiler */}
             {[
               ['Tutanak No', sonuc.no],
               ['Tarih', sonuc.tarih],
@@ -83,26 +105,26 @@ export default function CalısanPage() {
               ['Uygulamaci', sonuc.uygulamaci],
               ['Bolge Mudurlugu', sonuc.bolge_mudurlugu],
             ].map(([label, value]) => (
-              <div key={label} className="flex justify-between text-sm border-b pb-2">
-                <span className="text-gray-500">{label}</span>
-                <span className="font-medium text-right max-w-[55%]">{value || '—'}</span>
+              <div key={label} className="flex justify-between text-sm pb-2" style={{ borderBottom: `1px solid ${borderColor}` }}>
+                <span style={{ color: textMuted }}>{label}</span>
+                <span className="font-semibold text-right max-w-[55%]" style={{ color: navy }}>{value || '—'}</span>
               </div>
             ))}
 
             {/* Is kalemleri */}
             {sonuc.tutanak_items && sonuc.tutanak_items.length > 0 && (
               <div className="pt-2">
-                <p className="font-medium text-gray-700 text-sm mb-2">Is Kalemleri ({sonuc.tutanak_items.length})</p>
+                <p className="font-semibold text-sm mb-2" style={{ color: navy }}>Is Kalemleri ({sonuc.tutanak_items.length})</p>
                 <div className="space-y-2">
                   {sonuc.tutanak_items.map((item: { poz_kodu: string; aciklama: string; miktar: number; birim: string; toplam_tutar: number }, idx: number) => (
-                    <div key={idx} className="bg-gray-50 rounded-lg p-2 text-xs">
+                    <div key={idx} className="rounded-xl p-2.5 text-xs" style={{ background: pageBg, border: `1px solid ${borderColor}` }}>
                       <div className="flex items-center gap-2 mb-1">
-                        <span className="bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-mono font-bold">{item.poz_kodu}</span>
-                        <span className="text-gray-600">{item.aciklama}</span>
+                        <span className="text-white px-1.5 py-0.5 rounded-md font-mono font-bold text-[11px]" style={{ background: navyLight }}>{item.poz_kodu}</span>
+                        <span style={{ color: textSecondary }}>{item.aciklama}</span>
                       </div>
-                      <div className="flex gap-3 text-gray-500">
-                        <span>Miktar: <b>{item.miktar} {item.birim}</b></span>
-                        <span className="text-green-700 font-bold">{item.toplam_tutar?.toLocaleString('tr-TR')} TL</span>
+                      <div className="flex gap-3" style={{ color: textMuted }}>
+                        <span>Miktar: <b style={{ color: navy }}>{item.miktar} {item.birim}</b></span>
+                        <span className="font-bold" style={{ color: '#1B7A5A' }}>{item.toplam_tutar?.toLocaleString('tr-TR')} TL</span>
                       </div>
                     </div>
                   ))}
@@ -111,24 +133,33 @@ export default function CalısanPage() {
             )}
             <button
               onClick={sifirla}
-              className="w-full mt-4 bg-red-600 text-white py-3 rounded-xl font-semibold text-sm"
+              className="w-full mt-4 text-white py-3 rounded-xl font-semibold text-sm transition-transform hover:scale-[1.01]"
+              style={{ background: navy }}
             >
-              Yeni Tutanak Yükle
+              Yeni Tutanak Yukle
             </button>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow p-5 space-y-4">
+          <div className="bg-white rounded-2xl p-5 space-y-4" style={{ border: `1px solid ${borderColor}` }}>
             <div
               onClick={() => inputRef.current?.click()}
-              className="border-2 border-dashed border-gray-300 rounded-xl p-6 text-center cursor-pointer hover:border-red-400 transition-colors"
+              className="rounded-xl p-8 text-center cursor-pointer transition-all duration-200"
+              style={{ border: `2px dashed ${borderColor}` }}
+              onMouseEnter={e => e.currentTarget.style.borderColor = navyLight}
+              onMouseLeave={e => e.currentTarget.style.borderColor = borderColor}
             >
               {preview ? (
-                <img src={preview} alt="Önizleme" className="mx-auto max-h-64 rounded-lg object-contain" />
+                <img src={preview} alt="Onizleme" className="mx-auto max-h-64 rounded-lg object-contain" />
               ) : (
                 <>
-                  <div className="text-5xl mb-3">📷</div>
-                  <p className="text-gray-600 font-medium">Tutanak fotoğrafı seç</p>
-                  <p className="text-gray-400 text-sm mt-1">veya çek</p>
+                  <div className="w-14 h-14 rounded-2xl mx-auto mb-3 flex items-center justify-center" style={{ background: pageBg }}>
+                    <svg className="w-7 h-7" style={{ color: textMuted }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                  </div>
+                  <p className="font-semibold" style={{ color: navy }}>Tutanak fotografı sec</p>
+                  <p className="text-sm mt-1" style={{ color: textMuted }}>veya cek</p>
                 </>
               )}
             </div>
@@ -141,11 +172,11 @@ export default function CalısanPage() {
             />
 
             {file && (
-              <p className="text-sm text-gray-500 text-center truncate">{file.name}</p>
+              <p className="text-sm text-center truncate" style={{ color: textSecondary }}>{file.name}</p>
             )}
 
             {hata && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg p-3">
+              <div className="text-sm rounded-xl p-3" style={{ background: '#FEF2F2', color: '#991B1B', border: '1px solid #FECACA' }}>
                 {hata}
               </div>
             )}
@@ -153,26 +184,31 @@ export default function CalısanPage() {
             <button
               onClick={yukle}
               disabled={!file || durum === 'yukleniyor'}
-              className="w-full bg-red-600 text-white py-3 rounded-xl font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              className="w-full text-white py-3 rounded-xl font-semibold text-sm disabled:opacity-40 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-transform hover:scale-[1.01]"
+              style={{ background: navy }}
             >
               {durum === 'yukleniyor' ? (
                 <>
-                  <span className="animate-spin inline-block">⟳</span> İşleniyor...
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  Isleniyor...
                 </>
               ) : (
-                'Tutanağı Yükle ve İşle'
+                'Tutanagi Yukle ve Isle'
               )}
             </button>
 
-            <p className="text-xs text-gray-400 text-center">
-              Görsel otomatik okunur ve sisteme kaydedilir
+            <p className="text-xs text-center" style={{ color: textMuted }}>
+              Gorsel otomatik okunur ve sisteme kaydedilir
             </p>
           </div>
         )}
 
         <div className="text-center mt-6">
-          <a href="/admin" className="text-sm text-gray-400 underline">
-            Yönetici paneline git →
+          <a href="/admin" className="text-sm font-medium transition-colors" style={{ color: textMuted }}
+            onMouseEnter={e => e.currentTarget.style.color = navy}
+            onMouseLeave={e => e.currentTarget.style.color = textMuted}
+          >
+            Yonetici paneline git →
           </a>
         </div>
       </div>
