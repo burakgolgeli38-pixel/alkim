@@ -207,37 +207,59 @@ interface OCRSonuc {
   field_confidence: Record<string, number>
 }
 
-const OCR_SYSTEM_PROMPT = `Sen bir inşaat/tadilat sektöründe uzmanlaşmış Türkçe el yazısı OCR sistemisin.
-ALKIM Mimarlık şirketinin tutanak formlarını okuyorsun.
+const OCR_SYSTEM_PROMPT = `Sen Türkiye'deki inşaat/tadilat sektöründe 20 yıl tecrübeli bir uzmansın.
+ALKIM Mimarlık şirketinin saha ekipleri tarafından el yazısıyla doldurulan tutanak formlarını dijitale çeviriyorsun.
 
-TEMEL GÖREVİN:
-- El yazısıyla doldurulmuş form görselinden bilgileri doğru çıkarmak
-- Her alan için 0-1 arası güven skoru vermek
-- İnşaat terminolojisini bilmek ve bağlamdan doğru kelimeyi çıkarmak
+KRİTİK: Bu formları TÜRK İNŞAAT USTALARI doldurur. Yazıları genelde:
+- Hızlı ve bozuk el yazısı
+- Harfler birbirine bağlı/karışık
+- Kısaltmalar kullanılır (mt=metre, ad=adet, m²=metrekare)
+- Bazen yazım hataları olur (izalasyon=izolasyon)
 
-SEN BİR İNŞAAT UZMANISIN. Bu kelimeleri iyi bilirsin:
+═══════════════════════════════════════════
+RAKAM OKUMA - EN KRİTİK KONU
+═══════════════════════════════════════════
+El yazısı rakamları çok karışır. Her rakamı TEK TEK incele:
+
+RAKAM AYIRT ETME KURALLARI:
+• 6 vs 8: 6'nın ALT kısmı açık/kıvrımlı, 8'in hem üstü hem altı kapalı yuvarlak
+• 6 vs 0: 6'nın üstünde kuyruk/kıvrık var, 0 tamamen oval/yuvarlak
+• 1 vs 7: 7'nin üstünde yatay çizgi var, 1 düz dikey çizgi
+• 4 vs 9: 4'ün sağ üstü açık açı yapar, 9'un üstü yuvarlak
+• 3 vs 8: 3'ün sol tarafı açık, 8 tamamen kapalı
+• 5 vs 6: 5'in üstü düz yatay çizgi, 6'nın üstü kıvrık
+• 2 vs 7: 2'nin altında yatay çizgi var
+
+Mağaza kodu 3-5 haneli SAYIDIR. Her hanede:
+- Piksellerin şekline bak, en yakın rakamı seç
+- Şüphen varsa güven skorunu düşür
+
+İNŞAAT TERİMLERİ - BU KELİMELERİ BİL:
+platform, güvenlik çiti, korkuluk, asansör, yağlı boya, plastik boya, dış cephe boya
 boru kapama, palet kafesi, sütlük kafesi, raf montajı, reyon düzenlemesi
-izolasyon, membran, şap, beton, harç, sıva, alçı, alçıpan, macun, astar
-boya (plastik/yağlı/dış cephe), seramik, fayans, granit, parke, laminat
-asma tavan, plaka, kartonpiyer, spotluk, led kanal
-tesisat, batarya, musluk, gider, sifon, klozet, lavabo
-hidrolik, panik bar, kilit, menteşe, doğrama, cam
-sac, profil, çelik, kaynak, korkuluk, merdiven
-çatı, oluk, dere, yağmur borusu, çinko
-söküm, yıkım, kırım, montaj, demontaj, nakliye, iskele`
+izolasyon, membran, şap, beton, harç, sıva, alçı, alçıpan, macun, astar, saten
+boya, seramik, fayans, granit, parke, laminat, vinil, epoksi
+asma tavan, plaka, kartonpiyer, spotluk, led kanal, taşyünü
+tesisat, batarya, musluk, gider, sifon, klozet, lavabo, pisuvar
+hidrolik, panik bar, kilit, menteşe, doğrama, cam, PVC, alüminyum
+sac, profil, çelik, kaynak, korkuluk, merdiven, platform, rampa
+çatı, oluk, dere, yağmur borusu, çinko, eternit
+söküm, yıkım, kırım, montaj, demontaj, nakliye, iskele, vinç
+demir, kaynakla sağlamlaştırma, silme, sökme, boyama
+ön cephe, arka cephe, iç mekan, dış mekan, zemin kat, bodrum
+çıtçıt, menteşe, kilit, sürgü, kapı, pencere, vitrin
+
+EL YAZISI OKUMA STRATEJİSİ:
+1. Önce kelimenin GENEL ŞEKLİNE bak (uzun mu, kısa mı, kaç harf)
+2. Sonra tek tek harfleri oku
+3. Okuduğun harf dizisi anlamsızsa → yukarıdaki terimler listesinden EN YAKIN kelimeyi bul
+4. Bağlamı kullan: inşaat formunda "korkuluk" mantıklı, "karkuluk" mantıksız
+5. Türkçe dilbilgisi: -ın/-in, -ları/-leri, -ması/-mesi, -daki/-deki ekleri`
 
 function buildOCRPrompt(pass: 'first' | 'second', previousResult?: string): string {
   const basePrompt = `Bu görseldeki ALKIM MİMARLIK TUTANAK FORMU'nu oku.
 
-═══════════════════════════════════════════
-MAĞAZA KODU - EN KRİTİK ALAN
-═══════════════════════════════════════════
-"Mağaza İsmi" alanında genelde 3-5 HANELİ bir SAYI yazar.
-Bu sayıyı ÇOK DİKKATLİ oku. Her rakamı tek tek doğrula.
-El yazısında: 1↔7, 4↔9, 3↔8, 6↔0 karışabilir.
-Bağlama bak: Mağaza kodu genelde 3-5 hane arası bir sayıdır.
-
-FORM YAPISI:
+FORM YAPISI (yukarıdan aşağıya):
 ┌──────────────────────────────────────────────────┐
 │ N° [basılı 6 hane]              Tarih [el yazısı]│
 │ Tutanak Numarası:        Müdahale Ediliş Tarihi: │
@@ -249,65 +271,109 @@ FORM YAPISI:
 │ Mimari Firma Sorumlusu:    Sorumlusu:            │
 └──────────────────────────────────────────────────┘
 
-İŞ KALEMLERİ OKUMA KURALLARI:
-1. Her satırı DİKKATLİ oku - inşaat/tadilat terimleri bekleniyor
-2. Bir satırda BİRDEN FAZLA farklı iş varsa ("ve" / virgülle ayrılmış) → AYRI kalemlere böl
-   Örnek: "palet kafesi ve sütlük kafesi çıtçıtı yapıldı" → 2 ayrı kalem
-   Örnek: "boru kapama, klima tesisat yapıldı" → 2 ayrı kalem
-3. Ama aynı işin parçasıysa BÖLME: "boru kapama ve izolasyon yapıldı" → 1 kalem
-4. Miktar + birim varsa ayır: "4 adet", "20 m²", "15 mt", "10 ad"
-5. Miktar yoksa → miktar: 1, birim: "Adet"
-6. Ustanın yazısı bozuk olabilir ama ANLAMLI Türkçe kelimeler çıkar
-7. "mt" = metre, "m²" veya "m2" = metrekare, "ad" = adet, "kg" = kilogram
+═══════════════════════════════════════════
+1. MAĞAZA İSMİ ALANI (en kritik)
+═══════════════════════════════════════════
+Bu alana usta hem mağaza adını hem kodunu yazabilir.
+Örnekler: "Uçgül 7681", "GÖLBAŞI", "1064", "Kepez 10064"
+- Sayı varsa → magaza_no alanına yaz
+- İsim varsa → magaza alanına yaz
+- İkisi de varsa → ikisini de ayrı ayrı yaz
 
-İMZA ALANI:
-- Sol alt "Mimari Firma Sorumlusu" = isim soyisim
-- Sağ alt "Sorumlusu" = isim soyisim (kaşe varsa kaşeden oku)
+MAĞAZA KODU OKUMA (3-5 haneli sayı):
+Her rakamı AYRI AYRI incele. Piksel piksel bak.
+Şüphen olan rakamı belirt, güven skorunu düşür.
+SAKIN acele etme — bir rakamı yanlış okumak TÜM eşleştirmeyi bozar.
 
-GÜVEN SKORU:
-Her alan ve her iş kalemi için 0.0-1.0 arası güven skoru ver.
-- 1.0 = kesinlikle doğru okudum (basılı/net yazı)
-- 0.7-0.9 = yüksek ihtimalle doğru
-- 0.4-0.6 = emin değilim ama en iyi tahminim
-- 0.0-0.3 = çok belirsiz, neredeyse okunamıyor
+═══════════════════════════════════════════
+2. İŞ KALEMLERİ (Konu Hakkında Açıklamalar)
+═══════════════════════════════════════════
+Bu bölümde inşaat/tadilat işleri anlatılır. Ustalar:
+- Hızlı yazar, harfler karışır
+- Kısaltma kullanır
+- Bir satıra birden fazla iş yazabilir
 
-Sadece JSON döndür, başka metin YAZMA.
+OKUMA STRATEJİSİ:
+a) Önce satırın GENEL yapısına bak — kaç kelime var, ne uzunlukta
+b) Her kelimeyi tek tek oku ama BAĞLAMI unutma
+c) Okuduğun kelime anlamsızsa, şekil olarak benzeyen İNŞAAT TERİMİNİ seç
+   Örnek: "karkuluk" → "korkuluk" (inşaat terimi)
+   Örnek: "boysd" → "boyası" (bağlamdan)
+   Örnek: "sağlamlasdırılması" → "sağlamlaştırılması"
+d) Bir satırda BİRDEN FAZLA farklı iş varsa → AYRI kalemlere böl
+   "platform güvenlik çitli ve korkuluklu asansör yağlı boya" = bu TEK iş
+   "boru kapama ve klima tesisat yapıldı" = bu 2 AYRI iş
+   Kural: farklı POZ/iş tipiyse böl, aynı işin detayıysa bölme
+
+GERÇEK ÖRNEKLER (ustalar böyle yazar):
+- "1 adet platform güvenlik çitli ve korkuluklu asansör yağlı boya"
+- "mağaza ön cephesindeki demir korkuluk kalınca alan yerlerin kaynakla sağlamlaştırılması"
+- "geri kalan yerlerin kaynağının sağlamlaştırılması"
+- "korkulukların silme ve sökülmesi" (NOT: burada "silme" = zımpara/temizlik anlamında)
+- "palet kafesi çıtçıtı yapıldı"
+- "sütlük kafesi çıtçıtı yapıldı"
+- "boru kapama ve izolasyon yapıldı"
+- "asma tavan plaka değişimi 20 m²"
+- "duvar sıva tamiri ve boyası yapıldı"
+
+Miktar/birim: "4 adet"→miktar:4, "20 m²"→miktar:20, "15 mt"→miktar:15 birim:"m"
+Miktar yoksa → miktar: 1, birim: "Adet"
+
+═══════════════════════════════════════════
+3. DİĞER ALANLAR
+═══════════════════════════════════════════
+- N°: Basılı 6 hane (kolay, dijital baskı)
+- Tarih: GG.AA.YYYY veya GG/AA/YYYY, yıl 2025-2026
+- Bölge İsmi: il/ilçe/semt adı (biz kullanmıyoruz ama yine de oku)
+- Çağrı No: sayı veya metin olabilir
+- Firma Sorumlusu (sol alt): ALKIM çalışanı isim-soyisim
+- Sorumlusu (sağ alt): Mağaza sorumlusu isim-soyisim
+
+═══════════════════════════════════════════
+4. GÜVEN SKORU
+═══════════════════════════════════════════
+Her alan için 0.0-1.0 güven skoru ver:
+- 0.95-1.0 = basılı/dijital, kesinlikle doğru
+- 0.8-0.94 = el yazısı ama net okudum
+- 0.6-0.79 = bozuk yazı ama bağlamdan anladım
+- 0.3-0.59 = tahmin, emin değilim
+- 0.0-0.29 = neredeyse okunamıyor
+
+SADECE JSON döndür, başka metin YAZMA.
 
 {
-  "no": {"deger": "607103", "guven": 0.99},
-  "tarih": {"deger": "08.03.2026", "guven": 0.85},
-  "mudahale_tarihi": {"deger": "08.03.2026", "guven": 0.80},
-  "bolge": {"deger": "", "guven": 0.0},
-  "magaza": {"deger": "GÖLBAŞI", "guven": 0.75},
-  "magaza_no": {"deger": "1064", "guven": 0.90},
+  "no": {"deger": "614461", "guven": 0.99},
+  "tarih": {"deger": "17.01.2026", "guven": 0.85},
+  "mudahale_tarihi": {"deger": "", "guven": 0.3},
+  "bolge": {"deger": "Çukurova", "guven": 0.80},
+  "magaza": {"deger": "Uçgül", "guven": 0.75},
+  "magaza_no": {"deger": "7681", "guven": 0.85},
   "adres": {"deger": "", "guven": 0.0},
-  "cagri_no": {"deger": "HASTANE", "guven": 0.70},
-  "konu": {"deger": "122.40", "guven": 0.65},
-  "firma_sorumlusu": {"deger": "Mustafa Özcan", "guven": 0.80},
-  "sorumlu": {"deger": "Tuğçe Gemici", "guven": 0.85},
+  "cagri_no": {"deger": "1940203", "guven": 0.80},
+  "konu": {"deger": "", "guven": 0.0},
+  "firma_sorumlusu": {"deger": "Muhammed Özcan", "guven": 0.75},
+  "sorumlu": {"deger": "Hasan İbilik", "guven": 0.80},
   "isler": [
-    {"aciklama": "1 Adet boru kapama yapıldı", "miktar": 1, "birim": "Adet", "guven": 0.85},
-    {"aciklama": "Klima tamiri yapıldı", "miktar": 1, "birim": "Adet", "guven": 0.70},
-    {"aciklama": "Reyon arkasında ilave yer boyası 10 m²", "miktar": 10, "birim": "m²", "guven": 0.60}
+    {"aciklama": "1 adet platform güvenlik çitli ve korkuluklu asansör yağlı boya", "miktar": 1, "birim": "Adet", "guven": 0.70},
+    {"aciklama": "Mağaza ön cephesindeki demir korkuluk kalınca alan yerlerin kaynakla sağlamlaştırılması ve geri kalan yerlerin kaynağının sağlamlaştırılması", "miktar": 1, "birim": "Adet", "guven": 0.55},
+    {"aciklama": "Korkulukların silme ve sökülmesi", "miktar": 1, "birim": "Adet", "guven": 0.60}
   ]
 }`
 
   if (pass === 'second' && previousResult) {
-    return `${basePrompt}
+    return `Bu görseli daha önce okudun ama bazı alanlar düşük güvenli çıktı.
+Görseli SIFIRDAN tekrar oku. İlk okumanı UNUTMA ama ona bağlı da kalma.
 
-═══════════════════════════════════════════
-2. GEÇİŞ - DOĞRULAMA VE DÜZELTME
-═══════════════════════════════════════════
-İlk okumada şu sonuç çıktı:
+İlk okuma sonucun (referans için):
 ${previousResult}
 
-Görsele TEKRAR bak. Özellikle güven skoru düşük (<0.7) olan alanlara ODAKLAN.
-- Mağaza kodunu TEKRAR oku - her rakamı kontrol et
-- İş kalemlerini TEKRAR oku - inşaat terimi olarak anlamlı mı?
-- İsimleri TEKRAR oku
-- İlk okumada hata yaptıysan DÜZELT
+ŞİMDİ YAP:
+1. MAĞAZA KODU: Görseldeki sayıya TEKRAR bak. Her rakamı 6 vs 8, 1 vs 7 açısından kontrol et.
+2. İŞ KALEMLERİ: Her satırı kelime kelime tekrar oku. İnşaat terimleri bekleniyor — anlamsız harf dizisi OLMAMALI.
+3. İlk okumada farklı bir sonuç çıkıyorsa → DÜZELT ve güven skorunu güncelle.
+4. İlk okumayla aynıysa → güven skorunu ARTIR.
 
-Düzeltilmiş JSON'ı aynı formatta döndür.`
+Aynı JSON formatında döndür.`
   }
 
   return basePrompt
@@ -402,9 +468,9 @@ export async function runOCR(
   let finalData = pass1Data
   let passesUsed = 1
 
-  // Mağaza kodu her zaman kritik - güven 1.0 olmadığı sürece 2. geçiş
+  // 2. geçiş sadece gerçekten gerektiğinde tetiklenir (B seçeneği)
   const magazaNoConf = fieldConfidence['magaza_no'] || 0
-  const needsPass2 = lowConfFields.length >= 2 || magazaNoConf < 0.95 || islerLowConf
+  const needsPass2 = lowConfFields.length >= 3 || magazaNoConf < 0.70 || (islerLowConf && overallConf < 0.65)
 
   if (needsPass2) {
     try {
