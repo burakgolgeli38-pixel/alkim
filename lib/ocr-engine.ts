@@ -326,8 +326,8 @@ Miktar yoksa → miktar: 1, birim: "Adet"
 - Tarih: GG.AA.YYYY veya GG/AA/YYYY, yıl 2025-2026
 - Bölge İsmi: il/ilçe/semt adı (biz kullanmıyoruz ama yine de oku)
 - Çağrı No: sayı veya metin olabilir
-- Firma Sorumlusu (sol alt): ALKIM çalışanı isim-soyisim
-- Sorumlusu (sağ alt): Mağaza sorumlusu isim-soyisim
+- Firma Sorumlusu (sol alt): ALKIM çalışanı isim-soyisim — BU ÖNEMLİ, oku
+- Sağ alttaki "Sorumlusu" alanını OKUMA, bizi ilgilendirmiyor
 
 ═══════════════════════════════════════════
 4. GÜVEN SKORU
@@ -352,7 +352,7 @@ SADECE JSON döndür, başka metin YAZMA.
   "cagri_no": {"deger": "1940203", "guven": 0.80},
   "konu": {"deger": "", "guven": 0.0},
   "firma_sorumlusu": {"deger": "Muhammed Özcan", "guven": 0.75},
-  "sorumlu": {"deger": "Hasan İbilik", "guven": 0.80},
+  "sorumlu": {"deger": "", "guven": 0.0},
   "isler": [
     {"aciklama": "1 adet platform güvenlik çitli ve korkuluklu asansör yağlı boya", "miktar": 1, "birim": "Adet", "guven": 0.70},
     {"aciklama": "Mağaza ön cephesindeki demir korkuluk kalınca alan yerlerin kaynakla sağlamlaştırılması ve geri kalan yerlerin kaynağının sağlamlaştırılması", "miktar": 1, "birim": "Adet", "guven": 0.55},
@@ -439,7 +439,7 @@ export async function runOCR(
   let totalConf = 0
   let fieldCount = 0
 
-  const fieldNames = ['no', 'tarih', 'mudahale_tarihi', 'magaza', 'magaza_no', 'konu', 'firma_sorumlusu', 'sorumlu']
+  const fieldNames = ['no', 'tarih', 'mudahale_tarihi', 'magaza', 'magaza_no', 'konu', 'firma_sorumlusu']
   for (const field of fieldNames) {
     const val = pass1Data[field]
     const conf = typeof val === 'object' && val?.guven !== undefined ? val.guven : 0.5
