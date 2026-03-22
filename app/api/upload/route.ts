@@ -36,58 +36,114 @@ export async function POST(req: NextRequest) {
             {
               type: 'text',
               text: `Bu bir ALKIM MİMARLIK şirketine ait el yazısıyla doldurulmuş TUTANAK FORMU görseli.
-Formdaki TÜM bilgileri dikkatli okuyup JSON olarak çıkar. Sadece JSON döndür, başka hiçbir şey yazma.
+Formdaki bilgileri okuyup JSON döndür. Sadece JSON, başka metin yazma.
 
-DİKKAT - TÜRKÇE EL YAZISI OKUMA KURALLARI:
-- Bu form TÜRKÇE el yazısıyla doldurulmuştur. Türkçe harflere dikkat et: ç, ş, ğ, ı, ö, ü, İ
-- El yazısında harfler birbirine benzeyebilir. Bağlamdan doğru kelimeyi çıkar.
-- "kafesi" kelimesini "karesi" olarak okuma - palet KAFESİ, sütlük KAFESİ doğrudur
-- İnşaat/tadilat terimleri: izolasyon, boya, sıva, alçı, fayans, parke, doğrama, cam, çatı, teras, kolon, kiriş, duvar, söküm, yıkım, montaj, kafes, palet, raf, depo
-- Bölge/şube isimleri: Türkiye'deki il, ilçe veya semt isimleri olabilir (örn: Kepez, Seyhan, Çukurova, Merkez vb.)
+═══════════════════════════════════════════
+TÜRKÇE EL YAZISI OKUMA - KRİTİK KURALLAR
+═══════════════════════════════════════════
 
-FORM ALANLARI (yukarıdan aşağıya):
-1. N° yanındaki 6 haneli sayı = TUTANAK NUMARASI (no)
-2. Tarih = GÜN.AY.YIL formatında oku (örn: 24.02.2026). Dikkatli oku, el yazısı rakamları karıştırma
-3. "Tutanak Numarası" etiketi yanındaki yazı = genelde bölge bilgisi (ADANA, ANTALYA vb.)
-4. "Bölge İsmi" etiketi yanındaki yazı = şube/bölge ismi (bolge)
-5. "Mağaza İsmi" etiketi yanındaki yazı = mağaza adı VEYA mağaza kodu (3-5 haneli sayı)
-   - Eğer sadece sayı yazıyorsa (örn: 10064) → magaza_no alanına yaz, magaza boş bırak
-   - Eğer isim yazıyorsa → magaza alanına yaz
-6. "Adres Bilgisi" yanındaki yazı = adres
-7. "Çağrı No" yanındaki yazı = çağrı numarası
-8. "Müdahale Ediliş Tarihi" = müdahale tarihi
+Bu formlar Türkiye'deki inşaat/tadilat ustaları tarafından hızlı el yazısıyla doldurulur.
+Yazılar genelde bozuk, harfler birbirine karışık, kısaltmalar ve argo kullanılır.
 
-İŞ KALEMLERİ ("Konu Hakkında Açıklamalar" bölümü):
-- Her satırdaki iş kalemini AYRI AYRI oku
-- Açıklamayı TUTANAKTA YAZDIĞI GİBİ yaz, düzeltme veya yorumlama yapma
-- Miktar ve birim bilgisini ayır (örn: "4 adet", "20 m²", "15 mt", "= 110 m²")
-- Eğer miktar belirtilmemişse miktar: 1, birim: "Adet" kullan
+HARF OKUMA İPUÇLARI:
+- El yazısında "a" ile "o" karışır → bağlama bak
+- "ı" noktasız, "i" noktalı → Türkçe'de bu ayrım ÖNEMLİ
+- "ş" ile "s", "ç" ile "c" birbirine benzer → kelime anlamına bak
+- "ğ" genelde üst çizgi olarak yazılır
+- Ustalar BÜYÜK HARF kullanmayı sever, küçük harfle de yazabilir
+- Birleşik yazılan kelimeler ayrı ayrı oku
 
-İMZA ALANI (formun alt kısmı):
-- Sol alt: "Mimari Firma Sorumlusu" = firma_sorumlusu (isim-soyisim oku)
-- Sağ alt: "Sorumlusu" = sorumlu (isim-soyisim oku, kaşe/mühürdeki ismi de oku)
+İNŞAAT TERİMLERİ SÖZLÜĞÜ (ustalar bunları yazar):
+boru, kapama, kapak, kafes, palet, sütlük, raf, depo, reyon, ranza
+izolasyon/izalasyon, boya, sıva, alçı, alçıpan, fayans, seramik
+parke, laminat, doğrama, cam, çatı, teras, kolon, kiriş, duvar
+söküm, yıkım, montaj, demontaj, tamir, onarım, bakım, tadilat
+membran, şap, beton, harç, derz, macun, astar, silikon, köpük
+asma tavan, plaka, kartonpiyer, spotluk, led kanal
+batarya, musluk, tesisat, gider, sifon, klozet, lavabo, pisuvar
+hidrolik, panik bar, kilit, menteşe, kapı, pencere
+sac, profil, çelik, kaynak, korkuluk, merdiven, platform
+çinko, oluk, dere, yağmur borusu, iniş borusu
+nakliye, sevkiyat, iskele, vinç, forklift
+robot makina, hırsız örtü, dayson, pano, tablo
+
+MAĞAZA KODU - ÇOK ÖNEMLİ:
+- "Mağaza İsmi" alanında genelde 3-5 HANELİ bir SAYI yazar (örn: 1064, 10064, 856)
+- Bu sayıyı DOĞRU oku, her rakamı dikkatle kontrol et
+- Bazen yanına mağaza adı da yazılabilir (örn: "1064 GÖLBAŞI")
+- Bazen SADECE mağaza adı yazılır (sayı olmadan)
+- Sayı varsa → magaza_no'ya yaz
+- İsim varsa → magaza'ya yaz
+- İkisi de varsa → ikisini de yaz
+
+FORM YAPISI (yukarıdan aşağıya sırayla):
+┌──────────────────────────────────────────────────┐
+│ N° [6 haneli basılı numara]     Tarih [el yazısı]│
+│ Tutanak Numarası:        Müdahale Ediliş Tarihi: │
+│ Bölge İsmi:              Mağaza İsmi:            │
+│ Adres Bilgisi:           Çağrı No:               │
+│ KONU: [konu başlığı]                             │
+│ ─── Konu Hakkında Açıklamalar ───                │
+│ 1) [iş kalemi 1]                                 │
+│ 2) [iş kalemi 2]                                 │
+│ 3) [iş kalemi 3]                                 │
+│ ...                                              │
+│ Mimari Firma Sorumlusu:    Sorumlusu:            │
+│ [imza + isim]              [kaşe/imza + isim]    │
+└──────────────────────────────────────────────────┘
+
+ALAN OKUMA DETAYLARI:
+1. N° = Form üstünde basılı 6 haneli numara (dijital baskı, kolay okunur)
+2. Tarih = Sağ üstte GG.AA.YYYY (veya GG/AA/YYYY). 2025 veya 2026 yılı olmalı
+3. Müdahale Ediliş Tarihi = İşin yapıldığı tarih
+4. Bölge İsmi = Türkiye il/ilçe/semt adı olabilir ama ÖNEMLİ DEĞİL, biz bunu mağaza kodundan buluyoruz
+5. Mağaza İsmi = MAĞAZA KODU (sayı) veya mağaza adı - BU ALAN ÇOK KRİTİK
+6. Çağrı No = Genelde "HASTANE", "ACİL" gibi veya boş olabilir. Sayı da olabilir.
+7. KONU = Kısa açıklama veya bir sayı (bazen tutar yazarlar)
+
+İŞ KALEMLERİ - KRİTİK BÖLÜM:
+- "Konu Hakkında Açıklamalar" altında numaralı veya numarasız satırlar halinde yazılır
+- Her SATIRDA bir veya BİRDEN FAZLA iş olabilir
+- Eğer bir satırda "ve" veya virgülle ayrılmış FARKLI işler varsa, bunları AYRI iş kalemleri olarak böl
+  Örnek: "boru kapama ve klima tesisat yapıldı" → 2 ayrı iş kalemi:
+    1) "boru kapama yapıldı"
+    2) "klima tesisat yapıldı"
+  Örnek: "palet kafesi, sütlük kafesi çıtçıtı yapıldı" → 2 ayrı iş kalemi:
+    1) "palet kafesi çıtçıtı yapıldı"
+    2) "sütlük kafesi çıtçıtı yapıldı"
+- Ancak aynı işin parçasıysa ayırma: "boru kapama ve izolasyon yapıldı" → bu TEK iştir
+- Miktar + birim ayır: "4 adet", "20 m²", "15 mt", "10 ad", "= 110 m²"
+- "mt" veya "metre" = m (metre uzunluk), "m²" veya "metrekare" = m², "ad" veya "adet" = Adet
+- Miktar yoksa → miktar: 1, birim: "Adet"
+- ÖNEMLİ: Ustanın yazdığını OLDUĞU GİBİ oku. Düzeltme/yorumlama YAPMA.
+- Ama Türkçe kelime olarak anlamlı hale getir (rastgele harf dizisi yazma)
+
+İMZA ALANI:
+- Sol alt "Mimari Firma Sorumlusu" = ALKIM çalışanı isim-soyisim
+- Sağ alt "Sorumlusu" = Mağaza sorumlusu isim-soyisim (kaşe varsa kaşeden oku)
+- "Kaşe Yoktur" yazıyorsa → sorumlu alanına "Kaşe Yoktur" + varsa ismi yaz
 
 JSON FORMAT:
 {
-  "no": "614544",
-  "tarih": "24.02.2026",
-  "mudahale_tarihi": "",
-  "bolge": "KEPEZ BOYU ŞUBE",
-  "magaza": "",
-  "magaza_no": "10064",
+  "no": "607103",
+  "tarih": "08.03.2026",
+  "mudahale_tarihi": "08.03.2026",
+  "bolge": "",
+  "magaza": "GÖLBAŞI",
+  "magaza_no": "",
   "adres": "",
-  "cagri_no": "",
-  "konu": "",
-  "firma_sorumlusu": "Şükrü Yücel",
-  "sorumlu": "Öznur Demir",
+  "cagri_no": "HASTANE",
+  "konu": "122.40",
+  "firma_sorumlusu": "Mustafa Özcan",
+  "sorumlu": "Tuğçe Gemici",
   "isler": [
-    {"aciklama": "Palet kafesi ve sütlük kafesi çıtçıtı yapıldı", "miktar": 1, "birim": "Adet"},
-    {"aciklama": "4 Palet çift", "miktar": 4, "birim": "Adet"},
-    {"aciklama": "20 Metre kare çinko kolonildi", "miktar": 20, "birim": "m²"}
+    {"aciklama": "1 Adet boru kapama yapıldı", "miktar": 1, "birim": "Adet"},
+    {"aciklama": "Klima tamiri yapıldı", "miktar": 1, "birim": "Adet"},
+    {"aciklama": "Reyon arkasında ilave yer boyası yapıldı 10 m²", "miktar": 10, "birim": "m²"}
   ]
 }
 
-Okunamayan alanlar için boş string kullan. Tahmin etme, okunamıyorsa boş bırak.`,
+Okunamayan alanlar için boş string kullan. Tahmin yapma, okunamıyorsa boş bırak.`,
             },
           ],
         },
@@ -102,7 +158,14 @@ Okunamayan alanlar için boş string kullan. Tahmin etme, okunamıyorsa boş bı
 
     // Görseli Supabase Storage'a yükle
     const supabaseAdmin = getSupabaseAdmin()
-    const fileName = `tutanak_${Date.now()}_${file.name}`
+    // Dosya adini sanitize et - Turkce karakter ve bosluklari temizle
+    const safeOrigName = file.name
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '') // aksan isareti kaldir
+      .replace(/[^a-zA-Z0-9._-]/g, '_') // ozel karakter -> _
+      .replace(/_+/g, '_') // ardisik _ temizle
+      .replace(/^_|_$/g, '') // bas/son _ temizle
+    const ext = safeOrigName.includes('.') ? safeOrigName.split('.').pop() : 'jpg'
+    const fileName = `tutanak_${Date.now()}.${ext}`
     const { error: uploadError } = await supabaseAdmin.storage
       .from('tutanaklar')
       .upload(fileName, buffer, { contentType: file.type })
@@ -116,12 +179,23 @@ Okunamayan alanlar için boş string kullan. Tahmin etme, okunamıyorsa boş bı
     // Magaza bilgilerini referanstan bul
     // ONCELIK: magaza_no (3-5 haneli kod) varsa ona gore esle, yoksa isimle fuzzy ara
     let magazaMatch = null
-    const ocrMagazaNo = String(extracted.magaza_no || '').trim()
+    let ocrMagazaNo = String(extracted.magaza_no || '').trim()
+
+    // Bazen magaza alaninda hem kod hem isim yazar (orn: "1064 GOLBASI")
+    // veya sadece magaza alanina kod yazilir (magaza_no bos birakilir)
+    const ocrMagaza = String(extracted.magaza || '').trim()
+    if (!ocrMagazaNo && ocrMagaza) {
+      const kodMatch = ocrMagaza.match(/\b(\d{3,5})\b/)
+      if (kodMatch) {
+        ocrMagazaNo = kodMatch[1]
+      }
+    }
+
     if (ocrMagazaNo) {
       magazaMatch = await findMagazaByKodAsync(ocrMagazaNo)
     }
-    if (!magazaMatch && extracted.magaza) {
-      magazaMatch = await findMagazaAsync(extracted.magaza)
+    if (!magazaMatch && ocrMagaza) {
+      magazaMatch = await findMagazaAsync(ocrMagaza)
     }
 
     // Dogrulama durumu kontrol
