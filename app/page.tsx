@@ -35,7 +35,7 @@ export default function CalısanPage() {
       const res = await fetch('/api/upload', { method: 'POST', body: fd })
       const json = await res.json()
       if (!res.ok) throw new Error(json.error || 'Hata oluştu')
-      setSonuc({ ...json.tutanak, _uyarilar: json.uyarilar, _dogrulama: json.dogrulama_durumu })
+      setSonuc({ ...json.tutanak, _uyarilar: json.uyarilar, _dogrulama: json.dogrulama_durumu, _ocr_meta: json.ocr_meta })
       setDurum('basarili')
     } catch (err: unknown) {
       setHata(err instanceof Error ? err.message : 'Bilinmeyen hata')
@@ -80,6 +80,31 @@ export default function CalısanPage() {
               </div>
               Tutanak Kaydedildi
             </div>
+
+            {/* OCR Meta */}
+            {sonuc._ocr_meta && (
+              <div className="rounded-xl p-3 flex items-center gap-3" style={{ background: colors.inputBg, border: `1px solid ${colors.borderColor}` }}>
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium" style={{ color: colors.textMuted }}>OCR Güven</span>
+                    <span className="text-xs font-bold px-1.5 py-0.5 rounded-md" style={{
+                      background: sonuc._ocr_meta.overall_confidence >= 80 ? colors.greenBg : sonuc._ocr_meta.overall_confidence >= 60 ? colors.orangeBg : colors.redBg,
+                      color: sonuc._ocr_meta.overall_confidence >= 80 ? colors.green : sonuc._ocr_meta.overall_confidence >= 60 ? colors.orange : colors.red,
+                    }}>
+                      %{sonuc._ocr_meta.overall_confidence}
+                    </span>
+                    <span className="text-xs" style={{ color: colors.textMuted }}>
+                      {sonuc._ocr_meta.passes_used === 2 ? '(2 geçiş)' : '(1 geçiş)'}
+                    </span>
+                  </div>
+                  {sonuc._ocr_meta.similar_magaza_kodlari?.length > 0 && (
+                    <div className="text-xs mt-1" style={{ color: colors.orange }}>
+                      💡 Benzer mağaza kodları: {sonuc._ocr_meta.similar_magaza_kodlari.map((s: {kod: string; magaza_adi: string}) => `${s.kod} (${s.magaza_adi})`).join(', ')}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             {/* Uyari */}
             {sonuc._dogrulama === 'uyari' && sonuc._uyarilar?.length > 0 && (

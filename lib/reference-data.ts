@@ -219,6 +219,63 @@ export function findMagazaByKod(kod: string): Magaza | null {
   return list.find(m => m.kod === kod.trim()) || null
 }
 
+// ---- Magaza Kodu Fuzzy Arama ----
+
+/**
+ * Magaza kodu tam eslesmediyse, 1 rakam farkla olasilari bulur
+ * Ornek: "1064" bulunamazsa → "1164", "1054", "1074" gibi onerileri doner
+ */
+export async function findSimilarMagazaKodlariAsync(kod: string): Promise<Array<{ kod: string; magaza_adi: string; bolge: string }>> {
+  const dbList = await getDBMagazalar()
+  const jsonList = getJSONMagazalar()
+  const allList = [...(dbList || []), ...jsonList]
+
+  // Tekrarlari kaldir
+  const seen = new Set<string>()
+  const unique = allList.filter(m => {
+    if (seen.has(m.kod)) return false
+    seen.add(m.kod)
+    return true
+  })
+
+  const suggestions: Array<{ kod: string; magaza_adi: string; bolge: string; dist: number }> = []
+
+  for (const m of unique) {
+    // Ayni hane sayisinda kontrol et
+    if (Math.abs(kod.length - m.kod.length) > 1) continue
+
+    const dist = levenshteinDist(kod, m.kod)
+    if (dist >= 1 && dist <= 2) {
+      suggestions.push({
+        kod: m.kod,
+        magaza_adi: m.magaza_adi,
+        bolge: m.yeni_idari_bolge,
+        dist,
+      })
+    }
+  }
+
+  return suggestions
+    .sort((a, b) => a.dist - b.dist)
+    .slice(0, 5)
+    .map(s => ({ kod: s.kod, magaza_adi: s.magaza_adi, bolge: s.bolge }))
+}
+
+function levenshteinDist(a: string, b: string): number {
+  const m = a.length, n = b.length
+  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0))
+  for (let i = 0; i <= m; i++) dp[i][0] = i
+  for (let j = 0; j <= n; j++) dp[0][j] = j
+  for (let i = 1; i <= m; i++) {
+    for (let j = 1; j <= n; j++) {
+      dp[i][j] = a[i - 1] === b[j - 1]
+        ? dp[i - 1][j - 1]
+        : 1 + Math.min(dp[i - 1][j], dp[i][j - 1], dp[i - 1][j - 1])
+    }
+  }
+  return dp[m][n]
+}
+
 // Cache temizle
 export function clearMagazaCache() {
   _magazalarDB = null
